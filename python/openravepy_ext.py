@@ -254,7 +254,7 @@ def quatRotateArrayT(q,transarray):
 
 def poseMultArrayT(pose,posearray):
     """multiplies a pose with an array of poses (each pose is a quaterion + translation)"""
-    return numpy.c_[quatMultArrayT(pose[0:4],posearray[:,0:4]),quatRotateArrayT(pose[0:4],posearray[:,4:7])+numpy.tile(pose[4:7],(len(posearray),1))]
+    return numpy.c_[quatMultArrayT(pose[0:4],numpy.array(posearray)[:,0:4]),quatRotateArrayT(pose[0:4],numpy.array(posearray)[:,4:7])+numpy.tile(pose[4:7],(len(posearray),1))]
     
 def quatArrayTDist(q,qarray):
     """computes the natural distance (Haar measure) for quaternions, q is a 4-element array, qarray is Nx4"""

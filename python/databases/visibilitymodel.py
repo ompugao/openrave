@@ -268,7 +268,7 @@ class VisibilityModel(DatabaseGenerator):
                                     link.SetTransform(poseMult(relativepose, link.GetTransformPose()))
                             else:
                                 # robot should not be grabbing the targt
-                                assert(self.robot.IsGrabbing(self.target) is None)
+                                #assert(self.robot.IsGrabbing(self.target) is None)
                                 relativepose = poseMult(InvertPose(self.attachedsensor.GetTransformPose()),self.manip.GetTransformPose())
                                 globalCameraPose = poseMult(self.target.GetTransformPose(), pose)
                                 grasppose = poseMult(globalCameraPose,relativepose)
