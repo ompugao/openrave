@@ -17,6 +17,7 @@ branches:
     - master
     - production
     - latest_stable
+    - travis
 before_install: # Use this to prepare the system to install prerequisites or dependencies
   # Define some config vars
   - export CI_SOURCE_PATH=$(pwd)
