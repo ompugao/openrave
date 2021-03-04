@@ -22,7 +22,8 @@
 #include "ParabolicPathSmooth/DynamicPath.h"
 #include "trajectoryretimer.h" // _(msgid)
 
-// #define SMOOTHER1_TIMING_DEBUG
+#define OPENRAVE_TIMING_DEBUGGING
+#define SMOOTHER1_TIMING_DEBUG
 // #define SMOOTHER1_PROGRESS_DEBUG
 
 namespace rplanners {
@@ -509,6 +510,11 @@ public:
                 // no idea what a good mintimestep is... _parameters->_fStepLength*0.5?
                 //numshortcuts = dynamicpath.Shortcut(parameters->_nMaxIterations,_feasibilitychecker,this, parameters->_fStepLength*0.99);
 #ifdef SMOOTHER1_TIMING_DEBUG
+                //CollisionCheckerBasePtr pcollsionchecker = GetEnv()->GetCollisionChecker();
+                //if (!!pcollsionchecker && pcollsionchecker->SupportsCommand("ResetStatistics")) {
+                //    std::string sout;
+                //    pcollsionchecker->SendCommand(sout, "ResetStatistics");
+                //}
                 _tShortcutStart = utils::GetMicroTime();
 #endif
                 if (!_usingNewHeuristics) {
@@ -519,6 +525,10 @@ public:
                 }
 #ifdef SMOOTHER1_TIMING_DEBUG
                 _tShortcutEnd = utils::GetMicroTime();
+                //if (!!pcollsionchecker && pcollsionchecker->SupportsCommand("DisplayStatistics")) {
+                //    std::string sout;
+                //    pcollsionchecker->SendCommand(sout, "DisplayStatistics parabolicsmoother_shortcutting");
+                //}
 #endif
                 if( numshortcuts < 0 ) {
                     return OPENRAVE_PLANNER_STATUS(str(boost::format("env=%d, Planning was interrupted")%GetEnv()->GetId()), PS_Interrupted);
@@ -529,10 +539,9 @@ public:
             }
             RAVELOG_DEBUG_FORMAT("env=%d, after shortcutting: duration %.15e -> %.15e, diff = %.15e", GetEnv()->GetId()%dummyDur1%dummyDur2%(dummyDur1 - dummyDur2));
 
-#ifdef OPENRAVE_TIMING_DEBUGGING
-            RAVELOG_INFO_FORMAT("env=%d, calling checkmanipconstraints %d times, using %.15e sec. = %.15e sec./call", GetEnv()->GetId()%ncheckmanipconstraints%checkmaniptime%(ncheckmanipconstraints == 0 ? 0 : checkmaniptime/ncheckmanipconstraints));
-#endif
-
+// #ifdef OPENRAVE_TIMING_DEBUGGING
+//             RAVELOG_INFO_FORMAT("env=%d, calling checkmanipconstraints %d times, using %.15e sec. = %.15e sec./call", GetEnv()->GetId()%ncheckmanipconstraints%checkmaniptime%(ncheckmanipconstraints == 0 ? 0 : checkmaniptime/ncheckmanipconstraints));
+// #endif
             ++_progress._iteration;
             if( _CallCallbacks(_progress) == PA_Interrupt ) {
                 return OPENRAVE_PLANNER_STATUS(str(boost::format("env=%d, Planning was interrupted")%GetEnv()->GetId()), PS_Interrupted);
@@ -581,6 +590,7 @@ public:
                 temprampsnd[0] = rampnd;
                 // double-check the current ramps, ignore first and last ramps since they connect to the initial and goal positions, and those most likely they cannot be fixed .
                 if(!rampnd.constraintchecked ) {
+                    RAVELOG_WARN_FORMAT("double check ramp[%d/%d]!!!!", irampindex%dynamicpath.ramps.size());
                     //(irampindex > 0 && irampindex+1 < dynamicpath.ramps.size())
                     rampndtrimmed = rampnd;
                     bool bTrimmed = false;
@@ -769,6 +779,8 @@ public:
                     if( _CallCallbacks(_progress) == PA_Interrupt ) {
                         return OPENRAVE_PLANNER_STATUS(str(boost::format("env=%d, Planning was interrupted")%GetEnv()->GetId()), PS_Interrupted);
                     }
+                } else {
+                    //RAVELOG_DEBUG_FORMAT("no double check of ramp[%d/%d]", irampindex%dynamicpath.ramps.size());
                 }
 
                 FOREACH(itrampnd2, temprampsnd) {
@@ -1409,6 +1421,12 @@ protected:
         dReal cutoffRatio = 0;//1e-3;
 #ifdef OPENRAVE_TIMING_DEBUGGING
         uint32_t tshortcutstart = utils::GetMicroTime();
+        dReal interpolationtime = 0.0;
+        uint64_t ninterpolations = 0;
+        dReal checktime = 0.0;
+        uint64_t nchecks = 0;
+        uint64_t nslowdownloops = 0;
+        dReal slowdownlooptime = 0.0;
 #endif
         int iters=0;
         for(iters=0; iters<numIters; iters++) {
@@ -1502,17 +1520,17 @@ protected:
                 dReal fcurmult = fstarttimemult;
 
 #ifdef OPENRAVE_TIMING_DEBUGGING
-                tloopstart = utils::GetMicroTime();
+                uint64_t tloopstart = utils::GetMicroTime();
 #endif
                 size_t islowdowntry = 0;
                 bool bShortcutTimeExceeded = false;
                 for(islowdowntry = 0; islowdowntry < 4; ++islowdowntry ) {
 #ifdef OPENRAVE_TIMING_DEBUGGING
-                    tinterpstart = utils::GetMicroTime();
+                    uint64_t tinterpstart = utils::GetMicroTime();
 #endif
                     bool res=ParabolicRamp::SolveMinTime(x0, dx0, x1, dx1, accellimits, vellimits, _parameters->_vConfigLowerLimit, _parameters->_vConfigUpperLimit, intermediate, _parameters->_multidofinterp);
 #ifdef OPENRAVE_TIMING_DEBUGGING
-                    tinterpend = utils::GetMicroTime();
+                    uint64_t tinterpend = utils::GetMicroTime();
                     interpolationtime += 0.000001f*(float)(tinterpend - tinterpstart);
                     ninterpolations += 1;
 #endif
@@ -1565,11 +1583,11 @@ protected:
 
                         iIterProgress += 0x10;
 #ifdef OPENRAVE_TIMING_DEBUGGING
-                        tcheckstart = utils::GetMicroTime();
+                        uint64_t tcheckstart = utils::GetMicroTime();
 #endif
                         retcheck = _feasibilitychecker.Check2(intermediate.ramps[iramp], 0xffff|CFO_FromTrajectorySmoother, outramps);
 #ifdef OPENRAVE_TIMING_DEBUGGING
-                        tcheckend = utils::GetMicroTime();
+                        uint64_t tcheckend = utils::GetMicroTime();
                         checktime += 0.000001f*(float)(tcheckend - tcheckstart);
                         nchecks += 1;
 #endif
@@ -1749,7 +1767,7 @@ protected:
                 }
 #ifdef OPENRAVE_TIMING_DEBUGGING
                 nslowdownloops += (islowdowntry + 1);
-                tloopend = utils::GetMicroTime();
+                uint64_t tloopend = utils::GetMicroTime();
                 slowdownlooptime += 0.000001f*(float)(tloopend - tloopstart);
 #endif
                 if (bShortcutTimeExceeded) {
@@ -2001,6 +2019,12 @@ protected:
         dReal currentBestScore = 1.0;
 #ifdef OPENRAVE_TIMING_DEBUGGING
         uint32_t tshortcutstart = utils::GetMicroTime();
+        dReal interpolationtime = 0.0;
+        uint64_t ninterpolations = 0;
+        dReal checktime = 0.0;
+        uint64_t nchecks = 0;
+        uint64_t nslowdownloops = 0;
+        dReal slowdownlooptime = 0.0;
 #endif
         int iters = 0;
         // For special shortcut
@@ -2152,6 +2176,9 @@ protected:
                     }
                 }
 
+#ifdef OPENRAVE_TIMING_DEBUGGING
+                uint64_t tloopstart = utils::GetMicroTime();
+#endif
                 size_t islowdowntry = 0; // counting how many times we slow down vellimits/accellimits in this shortcut iteration
                 size_t islowdowntryduetomanip = 0; // counting how many times we slow down vellimits/accellimits due to tool speed/accel constraints
                 bool bShortcutTimeExceeded = false;
@@ -2492,7 +2519,7 @@ protected:
                 }
 #ifdef OPENRAVE_TIMING_DEBUGGING
                 nslowdownloops += (islowdowntry + 1);
-                tloopend = utils::GetMicroTime();
+                uint64_t tloopend = utils::GetMicroTime();
                 slowdownlooptime += 0.000001f*(float)(tloopend - tloopstart);
 #endif
                 if (bShortcutTimeExceeded) {

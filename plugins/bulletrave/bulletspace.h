@@ -440,7 +440,7 @@ private:
     void _Synchronize(KinBodyInfoPtr pinfo)
     {
         vector<Transform> vtrans;
-        std::vector<int> dofbranches;
+        std::vector<dReal> dofbranches;
         pinfo->pbody->GetLinkTransformations(vtrans,dofbranches);
         pinfo->nLastStamp = pinfo->pbody->GetUpdateStamp();
         BOOST_ASSERT( vtrans.size() == pinfo->vlinks.size() );

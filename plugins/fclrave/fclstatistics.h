@@ -53,9 +53,9 @@ public:
         RAVELOG_WARN_FORMAT("FCL STATISTICS;%s%s", label % ss.str());
     }
 
-    void Display() {
+    void Display(const std::string& fileprefix="") {
         EnvironmentMutex::scoped_lock lock(log_out_mutex);
-        std::fstream f("fclstatistics.log", std::fstream::out | std::fstream::app);
+        std::fstream f(fileprefix+"fclstatistics.log", std::fstream::out | std::fstream::app);
         FOREACH(ittiming, timings) {
             f << ittiming->first;
             size_t maxTimingCount = 0;
@@ -85,6 +85,11 @@ public:
 #ifdef FCL_STATISTICS_DISPLAY_CONTINUOUSLY
         DisplaySingle(currentTimingLabel, currentTimings);
 #endif
+    }
+
+    void Reset() {
+        currentTimings.clear();
+        timings.clear();
     }
 
     void AddTimepoint() {
@@ -122,7 +127,11 @@ typedef boost::shared_ptr<FCLStatistics> FCLStatisticsPtr;
 
 #define ADD_TIMING(statistics) statistics->AddTimepoint()
 
-#define DISPLAY(statistics) statistics->DisplayAll()
+#define DISPLAY(statistics, fileprefix) statistics->Display(fileprefix)
+
+#define DISPLAY_ALL(statistics) statistics->DisplayAll()
+
+#define RESET_TIMINGS(statistics) statistics->Reset()
 
 } // fclrave
 
@@ -136,7 +145,9 @@ class FCLStatistics {
 #define SETUP_STATISTICS(statistics, userdatakey, id) do {} while(false)
 #define START_TIMING(statistics, label) do {} while(false)
 #define ADD_TIMING(statistics) do {} while(false)
-#define DISPLAY(statistics) do {} while(false)
+#define DISPLAY(statistics, fileprefix) do {} while(false)
+#define DISPLAY_ALL(statistics) do {} while(false)
+#define RESET_TIMINGS(statistics) do {} while(false)
 
 }
 #endif
