@@ -60,16 +60,19 @@ public:
             f << ittiming->first;
             size_t maxTimingCount = 0;
             FOREACH(ittimingvector, ittiming->second) {
-                f << ";";
-                maxTimingCount = std::max(maxTimingCount, ittimingvector->size() - 1);
-                std::vector<time_point>::iterator it = ittimingvector->begin();
+                const std::vector<time_point>& timingvector = ittimingvector->first;
+                const bool bincollision = ittimingvector->second;
+                f << ";" << bincollision << "!";
+                maxTimingCount = std::max(maxTimingCount, timingvector.size() - 1);
+                std::vector<time_point>::const_iterator it = timingvector.begin();
                 time_point t = *it;
-                while(++it != ittimingvector->end()) {
+                while(++it != timingvector.end()) {
                     f << "|" << (*it - t).count();
-                    t = *it;
+                    //t = *it;
                 }
             }
-            f << ";" << maxTimingCount << std::endl;
+            f << std::endl;
+            //f << ";" << maxTimingCount << std::endl;
         }
     }
 
@@ -79,9 +82,9 @@ public:
         currentTimings.push_back(std::chrono::high_resolution_clock::now());
     }
 
-    void StopManualTiming() {
+    void StopManualTiming(bool bincollision=false) {
         currentTimings.push_back(std::chrono::high_resolution_clock::now());
-        timings[currentTimingLabel].push_back(currentTimings);
+        timings[currentTimingLabel].push_back(std::make_pair(currentTimings, bincollision));
 #ifdef FCL_STATISTICS_DISPLAY_CONTINUOUSLY
         DisplaySingle(currentTimingLabel, currentTimings);
 #endif
@@ -114,7 +117,7 @@ private:
     std::string name;
     std::string currentTimingLabel;
     std::vector<time_point> currentTimings;
-    std::map< std::string, std::vector< std::vector<time_point> > > timings;
+    std::map< std::string, std::vector< std::pair<std::vector<time_point>, bool> > > timings;
 };
 
 typedef boost::shared_ptr<FCLStatistics> FCLStatisticsPtr;
@@ -123,7 +126,8 @@ typedef boost::shared_ptr<FCLStatistics> FCLStatisticsPtr;
     statistics = boost::make_shared<FCLStatistics>(userdatakey, id); \
     globalStatistics.push_back(boost::weak_ptr<FCLStatistics>(statistics))
 
-#define START_TIMING(statistics, label) FCLStatistics::Timing t = statistics->StartTiming(label)
+#define START_TIMING(statistics, label) statistics->StartManualTiming(label)
+#define STOP_TIMING(statistics, bincollision) statistics->StopManualTiming(bincollision)
 
 #define ADD_TIMING(statistics) statistics->AddTimepoint()
 
@@ -144,6 +148,7 @@ class FCLStatistics {
 
 #define SETUP_STATISTICS(statistics, userdatakey, id) do {} while(false)
 #define START_TIMING(statistics, label) do {} while(false)
+#define STOP_TIMING(statistics, bincollision) do {} while(false)
 #define ADD_TIMING(statistics) do {} while(false)
 #define DISPLAY(statistics, fileprefix) do {} while(false)
 #define DISPLAY_ALL(statistics) do {} while(false)

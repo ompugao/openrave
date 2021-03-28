@@ -366,7 +366,9 @@ public:
     {
         START_TIMING_OPT(_statistics, "Body/Env",_options,pbody1->IsRobot());
         // TODO : tailor this case when stuff become stable enough
-        return CheckCollision(pbody1, std::vector<KinBodyConstPtr>(), std::vector<LinkConstPtr>(), report);
+        bool incollision = CheckCollision(pbody1, std::vector<KinBodyConstPtr>(), std::vector<LinkConstPtr>(), report);
+        STOP_TIMING(_statistics, incollision);
+        return incollision;
     }
 
     virtual bool CheckCollision(KinBodyConstPtr pbody1, KinBodyConstPtr pbody2, CollisionReportPtr report = CollisionReportPtr())
@@ -410,6 +412,7 @@ public:
         }
         ADD_TIMING(_statistics);
         body1Manager.GetManager()->collide(body2Manager.GetManager().get(), &query, &FCLCollisionChecker::CheckNarrowPhaseCollision);
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -417,7 +420,9 @@ public:
     {
         START_TIMING_OPT(_statistics, "Link/Env",_options,false);
         // TODO : tailor this case when stuff become stable enough
-        return CheckCollision(plink, std::vector<KinBodyConstPtr>(), std::vector<LinkConstPtr>(), report);
+        bool incollision = CheckCollision(plink, std::vector<KinBodyConstPtr>(), std::vector<LinkConstPtr>(), report);
+        STOP_TIMING(_statistics, incollision);
+        return incollision;
     }
 
     virtual bool CheckCollision(LinkConstPtr plink1, LinkConstPtr plink2, CollisionReportPtr report = CollisionReportPtr())
@@ -428,6 +433,7 @@ public:
         }
 
         if( !plink1->IsEnabled() || !plink2->IsEnabled() ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -448,6 +454,7 @@ public:
         CollisionObjectPtr pcollLink1 = _fclspace->GetLinkBV(*plink1), pcollLink2 = _fclspace->GetLinkBV(*plink2);
 
         if( !pcollLink1 || !pcollLink2 ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -462,11 +469,13 @@ public:
             CheckNarrowPhaseDistance(pcollLink1.get(), pcollLink2.get(), &query, dist);
         }
         if( !pcollLink1->getAABB().overlap(pcollLink2->getAABB()) ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
         ADD_TIMING(_statistics);
         query.bselfCollision = true;  // for ignoring attached information!
         CheckNarrowPhaseCollision(pcollLink1.get(), pcollLink2.get(), &query);
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -479,14 +488,17 @@ public:
         }
 
         if( !plink->IsEnabled() ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
         if( pbody->GetLinks().size() == 0 || !_IsEnabled(*pbody) ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
         if( pbody->IsAttached(*plink->GetParent()) ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -503,6 +515,7 @@ public:
         CollisionObjectPtr pcollLink = _fclspace->GetLinkBV(*plink);
 
         if( !pcollLink ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -522,6 +535,7 @@ public:
         boost::shared_ptr<void> onexit((void*) 0, boost::bind(&FCLCollisionChecker::_PrintCollisionManagerInstanceBL, this, boost::ref(*pbody), boost::ref(bodyManager), boost::ref(*plink)));
 #endif
         bodyManager.GetManager()->collide(pcollLink.get(), &query, &FCLCollisionChecker::CheckNarrowPhaseCollision);
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -532,6 +546,7 @@ public:
         }
 
         if( !plink->IsEnabled() || find(vlinkexcluded.begin(), vlinkexcluded.end(), plink) != vlinkexcluded.end() ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -539,6 +554,7 @@ public:
         CollisionObjectPtr pcollLink = _fclspace->GetLinkBV(*plink);
 
         if( !pcollLink ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -558,6 +574,7 @@ public:
         boost::shared_ptr<void> onexit((void*) 0, boost::bind(&FCLCollisionChecker::_PrintCollisionManagerInstanceLE, this, boost::ref(*plink), boost::ref(envManager)));
 #endif
         envManager.GetManager()->collide(pcollLink.get(), &query, &FCLCollisionChecker::CheckNarrowPhaseCollision);
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -568,6 +585,7 @@ public:
         }
 
         if( (pbody->GetLinks().size() == 0) || !_IsEnabled(*pbody) ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -590,7 +608,7 @@ public:
         boost::shared_ptr<void> onexit((void*) 0, boost::bind(&FCLCollisionChecker::_PrintCollisionManagerInstanceBE, this, boost::ref(*pbody), boost::ref(bodyManager), boost::ref(envManager)));
 #endif
         envManager.GetManager()->collide(bodyManager.GetManager().get(), &query, &FCLCollisionChecker::CheckNarrowPhaseCollision);
-
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -782,6 +800,7 @@ public:
         }
 
         if( pbody->GetLinks().size() <= 1 ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -826,11 +845,13 @@ public:
                     }
                     CheckNarrowPhaseGeomCollision((*itgeom1).second.get(), (*itgeom2).second.get(), &query);
                     if( !(_options & OpenRAVE::CO_Distance) && query._bStopChecking ) {
+                        STOP_TIMING(_statistics, query._bCollision);
                         return query._bCollision;
                     }
                 }
             }
         }
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -843,6 +864,7 @@ public:
 
         KinBodyPtr pbody = plink->GetParent();
         if( pbody->GetLinks().size() <= 1 ) {
+            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -884,12 +906,14 @@ public:
                         }
                         CheckNarrowPhaseGeomCollision((*itgeom1).second.get(), (*itgeom2).second.get(), &query);
                         if( !(_options & OpenRAVE::CO_Distance) && query._bStopChecking ) {
+                            STOP_TIMING(_statistics, query._bCollision);
                             return query._bCollision;
                         }
                     }
                 }
             }
         }
+        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
