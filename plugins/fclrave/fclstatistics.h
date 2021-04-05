@@ -67,7 +67,7 @@ public:
                 std::vector<time_point>::const_iterator it = timingvector.begin();
                 time_point t = *it;
                 while(++it != timingvector.end()) {
-                    f << "|" << (*it - t).count();
+                    f << "|" << std::chrono::duration_cast<std::chrono::nanoseconds>(*it - t).count();
                     //t = *it;
                 }
             }
