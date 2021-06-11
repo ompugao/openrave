@@ -863,7 +863,7 @@ public:
         }
         //====================================================================================================
 #ifdef SMOOTHER1_TIMING_DEBUG
-        dReal tTotalShortcutTime = 0.000001f*(float)(_tShortcutEnd - _tShortcutStart);
+        dReal tTotalShortcutTime = 0.000001f*(double)(_tShortcutEnd - _tShortcutStart);
         RAVELOG_INFO_FORMAT("env=%d, shortcutting time=%.15e; iter=%d; time/iter=%.15e", GetEnv()->GetId()%tTotalShortcutTime%_numShortcutIters%(tTotalShortcutTime/_numShortcutIters));
         RAVELOG_INFO_FORMAT("env=%d, measured %d interpolations; total exectime=%.15e; time/iter=%.15e", GetEnv()->GetId()%_nCallsInterpolator%_totalTimeInterpolator%(_totalTimeInterpolator/_nCallsInterpolator));
         RAVELOG_INFO_FORMAT("env=%d, measured %d checkmanips; total exectime=%.15e; time/iter=%.15e", GetEnv()->GetId()%_nCallsCheckManip%_totalTimeCheckManip%(_nCallsCheckManip == 0 ? 0 : _totalTimeCheckManip/_nCallsCheckManip));
@@ -2840,7 +2840,7 @@ protected:
 
 #ifdef SMOOTHER1_TIMING_DEBUG
     // Statistics
-    uint32_t _tShortcutStart, _tShortcutEnd;
+    uint64_t _tShortcutStart, _tShortcutEnd;
     int _numShortcutIters;
 
     size_t _nCallsCheckManip;

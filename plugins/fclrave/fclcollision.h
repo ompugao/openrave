@@ -546,7 +546,6 @@ public:
         }
 
         if( !plink->IsEnabled() || find(vlinkexcluded.begin(), vlinkexcluded.end(), plink) != vlinkexcluded.end() ) {
-            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -554,7 +553,6 @@ public:
         CollisionObjectPtr pcollLink = _fclspace->GetLinkBV(*plink);
 
         if( !pcollLink ) {
-            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -574,7 +572,6 @@ public:
         boost::shared_ptr<void> onexit((void*) 0, boost::bind(&FCLCollisionChecker::_PrintCollisionManagerInstanceLE, this, boost::ref(*plink), boost::ref(envManager)));
 #endif
         envManager.GetManager()->collide(pcollLink.get(), &query, &FCLCollisionChecker::CheckNarrowPhaseCollision);
-        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 
@@ -585,7 +582,6 @@ public:
         }
 
         if( (pbody->GetLinks().size() == 0) || !_IsEnabled(*pbody) ) {
-            STOP_TIMING(_statistics, false);
             return false;
         }
 
@@ -608,7 +604,6 @@ public:
         boost::shared_ptr<void> onexit((void*) 0, boost::bind(&FCLCollisionChecker::_PrintCollisionManagerInstanceBE, this, boost::ref(*pbody), boost::ref(bodyManager), boost::ref(envManager)));
 #endif
         envManager.GetManager()->collide(bodyManager.GetManager().get(), &query, &FCLCollisionChecker::CheckNarrowPhaseCollision);
-        STOP_TIMING(_statistics, query._bCollision);
         return query._bCollision;
     }
 

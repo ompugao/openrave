@@ -16,8 +16,9 @@ class FCLStatistics;
 
 static std::vector<boost::weak_ptr<FCLStatistics> > globalStatistics;
 static EnvironmentMutex log_out_mutex;
-typedef std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
-typedef std::chrono::duration<double> duration;
+// typedef std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
+// typedef std::chrono::duration<double> duration;
+typedef uint64_t time_point;
 
 class FCLStatistics {
 public:
@@ -47,7 +48,8 @@ public:
         std::vector<time_point>::iterator it = timings.begin();
         time_point t = *it;
         while(++it != timings.end()) {
-            ss << ";" << (*it - t).count();
+            //ss << ";" << (*it - t).count();
+            ss << ";" << (*it - t);
             t = *it;
         }
         RAVELOG_WARN_FORMAT("FCL STATISTICS;%s%s", label % ss.str());
@@ -67,7 +69,8 @@ public:
                 std::vector<time_point>::const_iterator it = timingvector.begin();
                 time_point t = *it;
                 while(++it != timingvector.end()) {
-                    f << "|" << std::chrono::duration_cast<std::chrono::nanoseconds>(*it - t).count();
+                    //f << "|" << std::chrono::duration_cast<std::chrono::nanoseconds>(*it - t).count();
+                    f << "|" << (*it - t);
                     //t = *it;
                 }
             }
@@ -79,11 +82,13 @@ public:
     void StartManualTiming(std::string const& label) {
         currentTimingLabel = str(boost::format("%s;%s")%name%label);
         currentTimings.resize(0);
-        currentTimings.push_back(std::chrono::high_resolution_clock::now());
+        //currentTimings.push_back(std::chrono::high_resolution_clock::now());
+        currentTimings.push_back(OpenRAVE::utils::GetNanoTime());
     }
 
     void StopManualTiming(bool bincollision=false) {
-        currentTimings.push_back(std::chrono::high_resolution_clock::now());
+        //currentTimings.push_back(std::chrono::high_resolution_clock::now());
+        currentTimings.push_back(OpenRAVE::utils::GetNanoTime());
         timings[currentTimingLabel].push_back(std::make_pair(currentTimings, bincollision));
 #ifdef FCL_STATISTICS_DISPLAY_CONTINUOUSLY
         DisplaySingle(currentTimingLabel, currentTimings);
@@ -96,7 +101,8 @@ public:
     }
 
     void AddTimepoint() {
-        currentTimings.push_back(std::chrono::high_resolution_clock::now());
+        //currentTimings.push_back(std::chrono::high_resolution_clock::now());
+        currentTimings.push_back(OpenRAVE::utils::GetNanoTime());
     }
 
     struct Timing {
