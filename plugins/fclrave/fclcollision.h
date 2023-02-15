@@ -130,6 +130,8 @@ public:
         // TODO : Consider removing these which could be more harmful than anything else
         RegisterCommand("SetBroadphaseAlgorithm", boost::bind(&FCLCollisionChecker::SetBroadphaseAlgorithmCommand, this, _1, _2), "sets the broadphase algorithm (Naive, SaP, SSaP, IntervalTree, DynamicAABBTree, DynamicAABBTree_Array)");
         RegisterCommand("SetBVHRepresentation", boost::bind(&FCLCollisionChecker::_SetBVHRepresentation, this, _1, _2), "sets the Bouding Volume Hierarchy representation for meshes (AABB, OBB, OBBRSS, RSS, kIDS)");
+        RegisterCommand("ResetStatistics", boost::bind(&FCLCollisionChecker::_ResetStatistics, this, _1, _2), "");
+        RegisterCommand("DisplayStatistics", boost::bind(&FCLCollisionChecker::_DisplayStatistics, this, _1, _2), "");
 
         RAVELOG_VERBOSE_FORMAT("FCLCollisionChecker %s created in env %d", _userdatakey%penv->GetId());
 
@@ -893,6 +895,19 @@ public:
 
 
 private:
+    bool _ResetStatistics(ostream& sout, istream& sinput)
+    {
+        RESET_TIMINGS(_statistics);
+        return !!sinput;
+    }
+    bool _DisplayStatistics(ostream& sout, istream& sinput)
+    {
+        std::string fileprefix;
+        sinput >> fileprefix;
+        DISPLAY(_statistics, fileprefix);
+        return !!sinput;
+    }
+
     inline boost::shared_ptr<FCLCollisionChecker> shared_checker() {
         return boost::static_pointer_cast<FCLCollisionChecker>(shared_from_this());
     }

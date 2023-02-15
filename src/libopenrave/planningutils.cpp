@@ -2027,8 +2027,8 @@ void GetDHParameters(std::vector<DHParameter>& vparameters, KinBodyConstPtr pbod
         Vector vlocalx(-vlocalaxis.y,vlocalaxis.x,0);
         dReal fsinalpha = RaveSqrt(vlocalx.lengthsqr3());
         itdh->alpha = RaveAtan2(fsinalpha, vlocalaxis.z);
-        if( itdh->alpha < 10*g_fEpsilon ) {
-            // axes are parallel
+        if( itdh->alpha < 10*g_fEpsilon || (RaveFabs(itdh->alpha) - PI) < 10*g_fEpsilon) {
+            // axes are parallel, or in a flipped manner
             if( vlocalanchor.lengthsqr2() > 10*g_fEpsilon*g_fEpsilon ) {
                 vlocalx.x = vlocalanchor.x;
                 vlocalx.y = vlocalanchor.y;
@@ -2187,7 +2187,10 @@ int DynamicsCollisionConstraint::_CheckState(const std::vector<dReal>& vdofveloc
             return CFO_CheckUserConstraints;
         }
     }
-    if( options & CFO_CheckTimeBasedConstraints ) {
+    if( (options & CFO_CheckTimeBasedConstraints) ) {
+
+        RAVELOG_WARN("dynamics check disabled!");
+        if (false) {
         // check dynamics
         FOREACHC(itbody, _listCheckBodies) {
             KinBodyPtr pbody = *itbody;
@@ -2234,10 +2237,12 @@ int DynamicsCollisionConstraint::_CheckState(const std::vector<dReal>& vdofveloc
                             }
                             _PrintOnFailure(str(boost::format("rejected torque due to joint %s (%d): %e !< %e !< %e. vel=[%s]")%pbody->GetJointFromDOFIndex(index)->GetName()%index%torquelimits.first%fcurtorque%torquelimits.second%ssvel.str()));
                         }
+                        RAVELOG_ERROR_FORMAT("dynamics check failed, options=0x%x", options);
                         return CFO_CheckTimeBasedConstraints;
                     }
                 }
             }
+        }
         }
     }
     FOREACHC(itbody, _listCheckBodies) {
@@ -2925,7 +2930,7 @@ int DynamicsCollisionConstraint::Check(const std::vector<dReal>& q0, const std::
                 bComputeNewStep = false;
             }
             prevtimestep = timestep; // have to always update since it serves as the basis for the next timestep chosen
-        }
+        } // end of while
         if( RaveFabs(fStep-fLargestStep) > RaveFabs(fLargestStepDelta) ) {
             RAVELOG_WARN_FORMAT("fStep (%.15e) did not reach fLargestStep (%.15e). %.15e > %.15e", fStep%fLargestStep%RaveFabs(fStep-fLargestStep)%fLargestStepDelta);
             if( !!filterreturn ) {
